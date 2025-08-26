@@ -9,11 +9,13 @@ Iz spletne strani sem pobrala podatke:
 * naslov,
 * avtor,
 * povprečna ocena,
-* število ocen (number of ratings),
-* število recenzij (number of reviews),
+* število ocen,
+* število recenzij,
+* leto izdaje,
 * žanri,
+* število žanrov, (?)
+* število trenutnih bralcev,
 * število strani,
-* datum izdaje,
 * jezik.
 
 ## Hipoteze
