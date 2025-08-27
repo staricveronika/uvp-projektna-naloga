@@ -3,6 +3,7 @@ import os
 import time
 import re
 import csv
+import html
 
 # OSNOVNE NASTAVITVE
 
@@ -11,7 +12,7 @@ IMENIK_HTML = "goodreads_html" # mapa, v katero bomo shranili podatke
 CSV_DATOTEKA = "goodreads_knjige.csv" # ime CSV datoteke, v katero bomo shranili podatke
 IMENIK_KNJIG_HTML = "goodreads_posamezne_knjige_html" # ime mape, v katero bomo shranili HTML-je posameznih knjig
 
-ZACETNA_STRAN = 20
+ZACETNA_STRAN = 1
 KONCNA_STRAN = 22
 
 HEADERS = {"User-agent": "Chrome/136.0.7103.114"}
@@ -25,7 +26,7 @@ def shrani_osnovne_htmlje(ZACETNA_STRAN, KONCNA_STRAN):
     for stran in range(ZACETNA_STRAN, KONCNA_STRAN + 1):
         url = f"{OSNOVNI_URL}?page={stran}" # sestavi url spletne strani, ki jo želimo pobrati
         print(f"Pobiram stran {stran}: {url}")
-        html = requests.get(url, headers=HEADERS) # ta html je objekt, ki vsebuje status kode in vsebino strani
+        html = requests.get(url, headers=HEADERS)
 
         if html.status_code == 200: # če je zahteva uspešna
             ime_datoteke = os.path.join(IMENIK_HTML, f"stran_{stran}.html")
@@ -45,7 +46,7 @@ def pridobi_povezave_do_knjig():
     for ime_datoteke in os.listdir(IMENIK_HTML): # prebere vse html datoteke v mapi goodreads_html
         if ime_datoteke.endswith(".html"):
             pot = os.path.join(IMENIK_HTML, ime_datoteke)
-            with open(pot, encoding="utf-8") as f: # odpre posamezno datoteko za branje
+            with open(pot, encoding="utf-8") as f:
                 vsebina = f.read()
                 najdeno = re.finditer(r'href="/book/show/(\d+)[^"]*"', vsebina) # poišče vse linke, ki kažejo na posamezne knjige
                 # \d+ pomeni vsaj eno števko
@@ -80,8 +81,14 @@ def shrani_strani_posameznih_knjig(povezave):
 
 # shrani_strani_posameznih_knjig(povezave)
 
-
 # IZLUŠČIMO PODATKE
+def pocisti_besedilo(besedilo):
+    """Odstrani odvečne presledke in HTML entitete, ki se pojavijo v HTML."""
+    if besedilo:
+        besedilo = html.unescape(besedilo)    # &amp; spremeni v &
+        besedilo = " ".join(besedilo.split()) # odstrani večkratne presledke
+        return besedilo
+    return None
 
 def izlusci_osnovne_podatke(od, do):
     """Funkcija izlušči osnovne podatke o knjigah iz HTML strani seznama."""
@@ -89,75 +96,93 @@ def izlusci_osnovne_podatke(od, do):
     # namesto tega odpira HTML-je, ki smo jih shranili s seznama knjig, npr. goodreads_html/stran_1.html, stran_2.html
     osnovni_podatki = []
     vzorec = re.compile(
-        r'<a class="bookTitle" href="[^"]+">(?P<naslov>[^<]+)</a>.*?'
-        r'<a class="authorName" href="[^"]+">(?P<avtor>[^<]+)</a>.*?'
-        r'<span class="minirating">\s*(?P<povp_ocena>[\d\.]+) avg rating — '
-        r'(?P<st_ocen>[\d,]+) ratings — (?P<st_recenzij>[\d,]+) reviews.*?'
-        r'(?P<leto_izdaje>\d{4})?',
-        re.DOTALL
+    r'<tr itemscope itemtype="http://schema.org/Book">.*?'
+    r'data-resource-id="(?P<id_knjige>\d+)".*?'
+    r'<a\s+class="bookTitle"[^>]*>.*?<span[^>]*>(?P<naslov>.*?)</span>.*?</a>'
+    r'.*?<a\s+class="authorName"[^>]*>.*?<span[^>]*>(?P<avtor>.*?)</span>.*?</a>'
+    r'.*?(?P<povp_ocena>\d+\.\d+)\s+avg rating.*?(?P<st_ocen>[\d,]+)\s+ratings',
+    re.DOTALL
     )
-    # re.compile(vzorec) ustvari objekt regularnega izraza, ki ga lahko večkrat uporabimo za iskanje, ujemanje, zamenjave
-    # poišče <a class="bookTitle" href="[^"]+"> ... </a>.*?
-    # (?P<ime_knjige>[^<]+) pomeni: shrani vse znake do < v skupino ime_knjige
-    # (?P<leto_izdaje>\d{4})? --> če obstaja, zajame 4-mestno število (leto izdaje)
 
     for stran in range(od, do + 1):
         pot = os.path.join(IMENIK_HTML, f"stran_{stran}.html") # sestavi pot do ustrezne datoteke, npr. goodreads_html/stran_1.html
         with open(pot, encoding="utf-8") as f:
             vsebina = f.read()
             for najdba in vzorec.finditer(vsebina):
-                naslov = najdba["naslov"].strip() # najdba["ime_knjige"] vzame zajeti naslov knjige
-                avtor = najdba["avtor"].strip()
-                povp_ocena = float(najdba["ocena"]) # oceno pretvori v decimalno število
+                id_knjige = int(najdba["id_knjige"])
+                naslov = pocisti_besedilo(najdba["naslov"]) # najdba["ime_knjige"] vzame zajeti naslov knjige
+                avtor = pocisti_besedilo(najdba["avtor"])
+                povp_ocena = float(najdba["povp_ocena"]) # oceno pretvori v decimalno število
                 st_ocen = int(najdba["st_ocen"].replace(",", ""))
-                st_recenzij = int(najdba["st_recenzij"].replace(",", ""))
-                leto_izdaje = najdba["leto_izdaje"].strip() if najdba["leto_izdaje"] else None
-                osnovni_podatki.append((naslov, avtor, povp_ocena, st_ocen, st_recenzij, leto_izdaje))
+                osnovni_podatki.append((id_knjige, naslov, avtor, povp_ocena, st_ocen))
     return osnovni_podatki
 
 def izlusci_podrobne_podatke_iz_knjige(osnovni_podatki):
     podrobni_podatki = []
 
     for knjiga in osnovni_podatki: # osnovni podatki je seznam tuplov
-        naslov = knjiga[0]
-        avtor = knjiga[1]
-        povp_ocena = knjiga[2]
-        st_ocen = knjiga[3]
-        st_recenzij = knjiga[4]
-        leto_izdaje = knjiga[5]
+        id_knjige = knjiga[0]
+        naslov = knjiga[1]
+        avtor = knjiga[2]
+        povp_ocena = knjiga[3]
+        st_ocen = knjiga[4]
 
-
-        ime_datoteke = re.sub(r'[^a-zA-Z0-9_]', '', naslov.replace(" ", "_")) # ostanejo samo številke, črke in podčrtaji
-        pot = os.path.join(IMENIK_KNJIG_HTML, ime_datoteke + ".html")
+        ime_datoteke = f"{id_knjige}.html"
+        pot = os.path.join(IMENIK_KNJIG_HTML, ime_datoteke)
         with open(pot, encoding="utf-8") as f:
             vsebina = f.read()
 
         # Privzete vrednosti
         st_strani = None
         jezik = None
+        leto_izdaje = None
         st_trenutnih_bralcev = 0
-        zanri = []
-    
+        zanri_niz = None
+        st_recenzij = 0
+        
         # Število strani
         st_strani_re = re.search(r'(\d+)\s+pages', vsebina)
         st_strani = int(st_strani_re.group(1)) if st_strani_re else None
 
         # Jezik
-        jezik_re = re.search(r'Language\s*</div>\s*<div[^>]*>\s*([^<]+)', vsebina)
-        jezik = jezik_re.group(1).strip() if jezik_re else None
+        jezik_re = re.search(r'"inLanguage"\s*:\s*"([^"]+)"', vsebina)
+        jezik = jezik_re.group(1) if jezik_re else None
+
+        # Leto izdaje
+        # podatek o tem je zapisan v JSON skripti na HTML strani
+        import datetime
+        vzorec = re.search(r'"publicationTime":\s*(\d+)', vsebina)  # poišče v HTML vrstico kot je "publicationTime":1234567800000
+        # publicationTime je zapisan v UTC (Coordinated Universal Time)
+        if vzorec:
+            timestamp_v_sekundah = int(vzorec.group(1)) / 1000 # pretvorimo timestamp iz milisekund v sekunde (delimo s 1000)
+            datum_v_utc = datetime.datetime.utcfromtimestamp(timestamp_v_sekundah) # iz timestampa naredimo datum (v UTC času)
+            # funkcija utcfromtimestamp pretvori timestamp pretvori v normalen datum
+            # rezultat je recimo 2004-09-14 00:00:00
+            leto_izdaje = datum_v_utc.year # iz objekta datetime vrnemo samo leto --> 2004
+        else:
+            leto_izdaje = None # če timestamp ni najden, vrnemo None
+    
 
         # Trenutni bralci
         trenutni_bralci_re = re.search(r'([\d,]+)\s+people\s+are\s+currently\s+reading', vsebina)
         st_trenutnih_bralcev = int(trenutni_bralci_re.group(1).replace(",", "")) if trenutni_bralci_re else 0
 
         # Žanri
-        zanri_iz_html = re.findall(r'<a class="actionLinkLite bookPageGenreLink"[^>]*>([^<]+)</a>', vsebina)
-        if zanri_iz_html:
-            zanri = [z.strip() for z in zanri_iz_html]
-            zanri_niz = ", ".join(zanri) if zanri else None
+        zanri_re = re.findall(r'"bookGenres":\s*\[.*?\]', vsebina, re.DOTALL)
+        if zanri_re:
+            # poiščemo vse "name":"..." znotraj tega bloka
+            imena_zanrov = re.findall(r'"name":"(.*?)"', zanri_re[0])
+            zanri_niz = ", ".join(imena_zanrov)
+        else:
+            zanri_niz = None
+
+        # Število recenzij
+        st_recenzij_re = re.search(r'([\d,]+)\s+reviews', vsebina)
+        st_recenzij = int(st_recenzij_re.group(1).replace(",", "")) if st_recenzij_re else 0
 
         # Združi osnovne in podrobne podatke
         podrobni_podatki.append({
+            "id_knjige": id_knjige,
             "naslov": naslov,
             "avtor": avtor,
             "povp_ocena": povp_ocena,
@@ -178,6 +203,7 @@ def shrani_v_csv(podrobni_podatki):
     with open(CSV_DATOTEKA, "w", newline="", encoding="utf-8") as dat:
         pisatelj = csv.writer(dat)
         pisatelj.writerow([
+            "id_knjige",
             "naslov",
             "avtor",
             "povp_ocena",
@@ -191,6 +217,7 @@ def shrani_v_csv(podrobni_podatki):
         ])
         for knjiga in podrobni_podatki:
             pisatelj.writerow([
+                knjiga["id_knjige"],
                 knjiga["naslov"],
                 knjiga["avtor"],
                 knjiga["povp_ocena"],
@@ -204,3 +231,18 @@ def shrani_v_csv(podrobni_podatki):
             ])
 
     print(f"Podatki shranjeni v {CSV_DATOTEKA}.")
+
+def main():
+    # 1. Pridobi osnovne podatke iz HTML-ja seznama
+    osnovni_podatki = izlusci_osnovne_podatke(ZACETNA_STRAN, KONCNA_STRAN)
+
+    # 2. Nato za vsako knjigo preberi njeno HTML datoteko in dodaj podrobne podatke
+    podrobni_podatki = izlusci_podrobne_podatke_iz_knjige(osnovni_podatki)
+
+    # 3. Shrani v CSV
+    shrani_v_csv(podrobni_podatki)
+
+
+# Ta del poskrbi, da se program izvrši samo, če datoteko poganjamo direktno, ne pa če jo uvozimo kot modul:
+if __name__ == "__main__":
+    main()
