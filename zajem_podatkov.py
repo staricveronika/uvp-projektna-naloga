@@ -232,15 +232,26 @@ def shrani_v_csv(podrobni_podatki):
 
     print(f"Podatki shranjeni v {CSV_DATOTEKA}.")
 
-def main():
-    # 1. Pridobi osnovne podatke iz HTML-ja seznama
-    osnovni_podatki = izlusci_osnovne_podatke(ZACETNA_STRAN, KONCNA_STRAN)
+def main(zacetna_stran=ZACETNA_STRAN, koncna_stran=KONCNA_STRAN):
+    # 1. Prenos HTML strani seznama
+    shrani_osnovne_htmlje(zacetna_stran, koncna_stran)
 
-    # 2. Nato za vsako knjigo preberi njeno HTML datoteko in dodaj podrobne podatke
+    # 2. Pridobitev povezav do posameznih knjig
+    povezave = pridobi_povezave_do_knjig()
+
+    # 3. Prenos HTML strani posameznih knjig
+    shrani_strani_posameznih_knjig(povezave)
+
+    # 4. Izluščevanje osnovnih podatkov
+    osnovni_podatki = izlusci_osnovne_podatke(zacetna_stran, koncna_stran)
+
+    # 5. Izluščenje podrobnih podatkov
     podrobni_podatki = izlusci_podrobne_podatke_iz_knjige(osnovni_podatki)
 
-    # 3. Shrani v CSV
+    # 6. Shrani v CSV
     shrani_v_csv(podrobni_podatki)
+
+    print("Vsi koraki so uspešno zaključeni.")
 
 
 # Ta del poskrbi, da se program izvrši samo, če datoteko poganjamo direktno, ne pa če jo uvozimo kot modul:
