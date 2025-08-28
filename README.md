@@ -17,4 +17,19 @@ Zajeti podatki vključujejo:
 * žanri.
 
 ## Navodila za uporabo
+Ta program samodejno zbere podatke o knjigah s seznama, tako da prenese HTML strani seznama in posameznih knjig, iz njih izlušči osnovne podatke in jih shrani v CSV datoteko.  
+
+Preden poženete program morate imeti nameščene naslednje pakete: 
+* `requests`,
+* `pandas`,
+* `matplotlib`,
+* `seaborn`.  
+Zadnji trije so potrebni za ogled datoteke `analiza_podatkov.ipynb`, kjer so pridobljeni podatki obdelani in vizualizirani.  
+
+Ko imate te pakete nameščene, lahko poženete datoteko programa `zajem_podatkov.py`. Program ustvari naslednji mapi in datoteko:
+* `goodreads_html/` – sem shrani HTML strani seznama,
+* `goodreads_podsamezne_knjige_html/` – sem shrani HTML strani posameznih knjig,
+* `goodreads_knjige.csv` – končna datoteka z izluščenimi podatki.
+
+Po končanem zagonu se v terminalu izpiše: "Vsi koraki so uspešno zaključeni."
 
