@@ -13,7 +13,7 @@ CSV_DATOTEKA = "goodreads_knjige.csv" # ime CSV datoteke, v katero bomo shranili
 IMENIK_KNJIG_HTML = "goodreads_posamezne_knjige_html" # ime mape, v katero bomo shranili HTML-je posameznih knjig
 
 ZACETNA_STRAN = 1
-KONCNA_STRAN = 22
+KONCNA_STRAN = 30
 
 HEADERS = {"User-agent": "Chrome/136.0.7103.114"}
 
