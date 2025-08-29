@@ -31,5 +31,5 @@ Ko imate te pakete nameščene, lahko poženete datoteko programa `zajem_podatko
 * `goodreads_podsamezne_knjige_html/` – sem shrani HTML strani posameznih knjig,
 * `goodreads_knjige.csv` – končna datoteka z izluščenimi podatki.
 
-Po končanem zagonu se v terminalu izpiše: "Vsi koraki so uspešno zaključeni."
+Med izvajanjem se bodo v terminalu izpisovala sporočila, ki bodo opisovala, na kateri točki je trenutno program. Po končanem zagonu se bo izpisalo: "Vsi koraki so uspešno zaključeni."
 
