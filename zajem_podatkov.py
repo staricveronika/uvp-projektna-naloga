@@ -4,6 +4,7 @@ import time
 import re
 import csv
 import html
+import datetime
 
 # OSNOVNE NASTAVITVE
 
@@ -78,7 +79,7 @@ def shrani_strani_posameznih_knjig(povezave):
 # IZLUŠČIMO PODATKE
 
 def pocisti_besedilo(besedilo):
-    """Odstrani odvečne presledke in posebne znake, ki se pojavijo v HTML."""
+    """Funkcija odstrani odvečne presledke in posebne znake, ki se pojavijo v HTML."""
     if besedilo:
         besedilo = html.unescape(besedilo) # &amp; spremeni v &
         besedilo = " ".join(besedilo.split()) # odstrani večkratne presledke
@@ -143,9 +144,9 @@ def izlusci_podrobne_podatke_iz_knjige(osnovni_podatki):
 
         # Leto izdaje
         # podatek o tem je zapisan v JSON skripti na HTML strani
-        import datetime
         vzorec = re.search(r'"publicationTime":\s*(\d+)', vsebina)
         # publicationTime je zapisan v UTC (Coordinated Universal Time)
+        # tu bomo potrebovali paket datetime
         if vzorec:
             timestamp_v_sekundah = int(vzorec.group(1)) / 1000 # pretvorimo iz milisekund v sekunde (delimo s 1000)
             datum_v_utc = datetime.datetime.utcfromtimestamp(timestamp_v_sekundah) # naredimo datum (v UTC času)
