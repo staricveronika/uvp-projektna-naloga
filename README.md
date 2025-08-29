@@ -17,12 +17,12 @@ Zajeti podatki vključujejo:
 * žanri.  
 
 Projektna naloga poleg te datoteke vsebuje še naslednje:
-* `zajem_podatkov.py`, kjer je napisan program za zbiranje in izluščevanje podatkov iz seznama ter shranjevanje v CSV,
+* `main.py`, kjer je napisan program za zbiranje in izluščevanje podatkov iz seznama ter shranjevanje v CSV,
 * `goodreads_knjige.csv`, kjer so zbrani izluščeni podatki v CSV formatu,
 * `analiza_podatkov.ipynb`, ki vsebuje analizo in vizualno predstavitev podatkov.
 
 ## Navodila za uporabo
-Program v datoteki `zajem_podatkov.py` samodejno zbere podatke o knjigah s seznama, tako da prenese HTML strani seznama in posameznih knjig, iz njih izlušči osnovne podatke in jih shrani v CSV datoteko.  
+Program v datoteki `main.py` samodejno zbere podatke o knjigah s seznama, tako da prenese HTML strani seznama in posameznih knjig, iz njih izlušči osnovne podatke in jih shrani v CSV datoteko.  
 
 Preden poženete program morate imeti nameščene naslednje pakete: 
 * `requests`,
@@ -32,7 +32,7 @@ Preden poženete program morate imeti nameščene naslednje pakete:
 
 Zadnji trije so potrebni za ogled datoteke `analiza_podatkov.ipynb`.  
 
-Ko imate te pakete nameščene, lahko poženete datoteko programa `zajem_podatkov.py`. Program ustvari naslednji mapi in datoteko:
+Ko imate te pakete nameščene, lahko poženete datoteko programa `main.py`. Program ustvari naslednji mapi in datoteko:
 * `goodreads_html/` – sem shrani HTML strani seznama,
 * `goodreads_podsamezne_knjige_html/` – sem shrani HTML strani posameznih knjig,
 * `goodreads_knjige.csv` – končna datoteka z izluščenimi podatki.
